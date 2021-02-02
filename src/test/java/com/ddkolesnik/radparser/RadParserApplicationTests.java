@@ -186,7 +186,7 @@ class RadParserApplicationTests {
     @Test
     public void getAuctionInfoTest() {
         String lot = "РАД-236305";
-        String url = "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296818%3Bmode%3Djust";
+        String url = "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295054%3Bmode%3Djust";
         TradingEntity tradingEntity = getAuctionInfo(lot, url);
         assertNotNull(tradingEntity);
     }
@@ -304,11 +304,16 @@ class RadParserApplicationTests {
     }
 
     private String getTradingTime(Document document) {
-        String tradingTime;
+        String tradingTime = "";
         Element tender = getElement(document, "div.tender");
         Element paragraph = tender.selectFirst("p");
         Element em = paragraph.selectFirst("em");
-        tradingTime = em.text().substring(0, 18);
+        String tmp = em.text().replaceAll("[А-Яа-я]", "").trim();
+        if (tmp.length() >= 33) {
+            tradingTime = tmp.substring(0, 33);
+        } else if (tmp.length() >= 18) {
+            tradingTime = tmp.substring(0, 18);
+        }
         return tradingTime;
     }
 
@@ -342,7 +347,10 @@ class RadParserApplicationTests {
                 if (child.size() > 0) {
                     String priceStr = child.get(0).toString();
                     try {
-                        price = new BigDecimal(priceStr.replaceAll("&nbsp;", "").trim());
+                        price = new BigDecimal(priceStr
+                                .replaceAll("&nbsp;", "")
+                                .replace(",", ".")
+                                .trim());
                     } catch (NumberFormatException ignored) {}
                 }
             }
