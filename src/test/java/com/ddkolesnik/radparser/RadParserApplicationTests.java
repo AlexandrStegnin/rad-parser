@@ -8,7 +8,6 @@ import com.ddkolesnik.radparser.service.ParseService;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,32 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
 class RadParserApplicationTests {
-
-    private static Map<String, String> links = new HashMap<>();
-
-    @BeforeAll
-    public static void setup() {
-        links.put("РАД-247162", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296818%3Bmode%3Djust");
-        links.put("РАД-247274", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297046%3Bmode%3Djust");
-        links.put("РАД-247164", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296817%3Bmode%3Djust");
-        links.put("РАД-247273", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297045%3Bmode%3Djust");
-        links.put("РАД-247163", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296813%3Bmode%3Djust");
-        links.put("РАД-247166", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296816%3Bmode%3Djust");
-        links.put("РАД-247275", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297047%3Bmode%3Djust");
-        links.put("РАД-247165", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296812%3Bmode%3Djust");
-        links.put("РАД-247168", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296815%3Bmode%3Djust");
-        links.put("РАД-247167", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296811%3Bmode%3Djust");
-        links.put("РАД-245650", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295054%3Bmode%3Djust");
-        links.put("РАД-246246", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295989%3Bmode%3Djust");
-        links.put("РАД-245651", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295055%3Bmode%3Djust");
-        links.put("РАД-247664", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297420%3Bmode%3Djust");
-        links.put("РАД-246247", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295990%3Bmode%3Djust");
-        links.put("РАД-246537", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296112%3Bmode%3Djust");
-        links.put("РАД-247816", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297659%3Bmode%3Djust");
-        links.put("РАД-245649", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295052%3Bmode%3Djust");
-        links.put("РАД-247160", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296814%3Bmode%3Djust");
-        links.put("РАД-247170", "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000296810%3Bmode%3Djust");
-    }
 
     @Autowired
     private ParseService parseService;
@@ -186,13 +159,16 @@ class RadParserApplicationTests {
     @Test
     public void getAuctionInfoTest() {
         String lot = "РАД-236305";
-        String url = "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000295054%3Bmode%3Djust";
+        String url = "https://sales.lot-online.ru/e-auction/auctionLotProperty.xhtml?parm=lotUnid%3D960000297046%3Bmode%3Djust";
         TradingEntity tradingEntity = getAuctionInfo(lot, url);
         assertNotNull(tradingEntity);
     }
 
     private TradingEntity getAuctionInfo(String lot, String url) {
         Document document = parseService.getDocument(url);
+        if (!isProperty(document)) {
+            return null;
+        }
         TradingEntity tradingEntity = new TradingEntity();
         tradingEntity.setLot(lot);
         tradingEntity.setUrl(url);
@@ -356,6 +332,27 @@ class RadParserApplicationTests {
             }
         }
         return price;
+    }
+
+    /**
+     * Отсеиваем всё, что не относится к "недвижимое имущество"
+     *
+     * @param document HTML страница
+     * @return ответ
+     */
+    private boolean isProperty(Document document) {
+        Element product = getElement(document, "div.product");
+        List<Element> paragraphs = product.select("p");
+        String description;
+        int counter = 0;
+        for (Element p : paragraphs) {
+            counter ++;
+            if (counter == 2) {
+                description = p.text();
+                return description.startsWith("Недвижимое имущество > Коммерческая недвижимость >");
+            }
+        }
+        return true;
     }
 
 }
