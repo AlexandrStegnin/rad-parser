@@ -2,6 +2,7 @@ package com.ddkolesnik.radparser.model;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -14,6 +15,7 @@ import java.math.BigDecimal;
 
 @Data
 @Entity
+@NoArgsConstructor
 @Table(name = "trading")
 @EqualsAndHashCode(callSuper = true)
 public class TradingEntity extends BaseEntity {
