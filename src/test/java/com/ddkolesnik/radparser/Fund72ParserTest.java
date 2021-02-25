@@ -24,11 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class Fund72ParserTest {
 
-    private static final String DEFAULT_URL = "http://www.fund72.ru";
-
-    private static final String URL = "/torgi/inye-ob-ekty-prodazh";
-
-    private static final String PROCESS_NAME = "pagination";
+    private static final String DEFAULT_URL = "http://www.fund72.ru/torgi/inye-ob-ekty-prodazh";
 
     @Test
     public void getFund72Lots() {
@@ -37,12 +33,12 @@ public class Fund72ParserTest {
         int pageCount = 1;
         List<TradingEntity> tradingEntities = new ArrayList<>();
         while (true) {
-            String lotsUrl = DEFAULT_URL + URL;
+            String lotsUrl = DEFAULT_URL;
             if (pageCount > 1) {
                 startPos += 20;
                 lotsUrl += "?start=" + startPos;
             }
-            waitFiltered(lotsUrl);
+            waitFiltered(lotsUrl, "pagination");
             SelenideElement lotsTable = getLotsTable();
             assertNotNull(lotsTable);
             List<SelenideElement> blogPosts = lotsTable.$$(By.cssSelector("[itemprop=blogPost]"));
@@ -128,11 +124,59 @@ public class Fund72ParserTest {
         assertFalse(tradingEntities.isEmpty());
     }
 
-    private void waitFiltered(String url) {
+    @Test
+    public void getFund72LotInfo() {
+        waitFiltered("http://www.fund72.ru/torgi/inye-ob-ekty-prodazh/1671-ob-ekt-nezavershennogo-stroitelstv",
+                "one-blog");
+        SelenideElement fbPostDescAr = $(By.cssSelector("div.fbpostdescar"));
+        assertTrue(fbPostDescAr.exists());
+        SelenideElement fieldsContainer = fbPostDescAr.$(By.cssSelector("dl.fields-container"));
+        assertTrue(fieldsContainer.exists());
+        List<SelenideElement> fieldsEntry = fieldsContainer.$$(By.cssSelector("dd.field-entry"));
+        assertFalse(fieldsEntry.isEmpty());
+        String lotNumber = "";
+        if (fieldsEntry.size() >= 5) {
+            lotNumber = fieldsEntry.get(fieldsEntry.size() - 1).text();
+            assertNotNull(lotNumber);
+        }
+        SelenideElement fbArctMap = $(By.cssSelector("div.clearfix.fbarctmap"));
+        String description = "";
+        if (fbArctMap.exists()) {
+            description = fbArctMap.$(By.cssSelector("p")).text();
+            assertFalse(description.isEmpty());
+        }
+        SelenideElement fbPostSved = $(By.cssSelector("div.fbpostsved"));
+        assertTrue(fbPostSved.exists());
+        SelenideElement postSvedFieldContainer = fbPostSved.$(By.cssSelector("dl.fields-container"));
+        assertTrue(postSvedFieldContainer.exists());
+        List<SelenideElement> fieldEntries = postSvedFieldContainer.$$(By.cssSelector("dd.field-entry"));
+        assertFalse(fieldEntries.isEmpty());
+        String depositAmount = "";
+        String auctionStep = "";
+        int counter = 0;
+        if (fieldEntries.size() >= 8) {
+            for (SelenideElement element : fieldEntries) {
+                if (counter == 6) {
+                    depositAmount = element.text();
+                    depositAmount = depositAmount.replaceAll(",", ".").replaceAll("\\D", "");
+                    assertFalse(depositAmount.isEmpty());
+                }
+                if (counter == 5) {
+                    auctionStep = element.text();
+                    auctionStep = auctionStep.replaceAll(",", ".").replaceAll("\\D", "");
+                    assertFalse(auctionStep.isEmpty());
+                }
+                counter++;
+            }
+        }
+        assertFalse(description.isEmpty());
+    }
+
+    private void waitFiltered(String url, String processName) {
         open(url);
         WebDriverRunner.getWebDriver().manage().window().fullscreen();
         WebDriverRunner.getWebDriver().manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
-        SelenideElement process = $(By.className(Fund72ParserTest.PROCESS_NAME));
+        SelenideElement process = $(By.className(processName));
         process.shouldBe(Condition.visible);
     }
 
