@@ -169,6 +169,12 @@ public class Fund72ParserTest {
                 counter++;
             }
         }
+        SelenideElement headLine = $(By.cssSelector("h2[itemprop=headline]"));
+        String lot = "";
+        if (headLine.exists()) {
+            lot = headLine.text();
+            assertFalse(lot.isEmpty());
+        }
         assertFalse(description.isEmpty());
     }
 
